@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 """
 Author: Alex Rivera
-Notes: This could be improved on massively, but will revisit to improve later.
+Purpose: Basic scraper for senior project 2024 course. 
 """
 
 headers = {
@@ -205,7 +205,6 @@ for i in range(2, len(options) - 2):
 
     print(f"Visible: {search_button.is_displayed()}")
     search_button.click()
-    # time.sleep(2)
 
     optionDropDown = WebDriverWait(driver, 20).until(
         EC.element_to_be_clickable((By.CLASS_NAME, "selModalButton"))
@@ -214,7 +213,6 @@ for i in range(2, len(options) - 2):
     optionDropDown.click()
     print(f"Dropdown visible: {optionDropDown.is_displayed()}")
 
-    # time.sleep(2)
     print("Finished round")
 
 cards_json = [card.to_dict() for card in cards]
