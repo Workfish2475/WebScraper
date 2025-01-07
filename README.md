@@ -7,7 +7,7 @@
 
 ### What the script does
 
-- The script will connect to ```https://en.onepiece-cardgame.com/cardlist/``` and begin gathering all character/card information from the site. The script will navigate through each of pages available until there is none left.
+- The script will connect to a site and begin gathering all character/card information from the site. The script will navigate through each of pages available until there is none left.
 - The script will then convert all the card information into a json file named ```data.json``` as shown below:
 
 ```
