@@ -12,6 +12,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 
+from dataclasses import dataclass
+
 """
 Author: Alex Rivera
 Purpose: Basic scraper for senior project 2024 course. 
