@@ -1,2 +1,5 @@
 /assets/cards/
 *.jpg
+.idea/
+.venv/
+assets/.DS_Store

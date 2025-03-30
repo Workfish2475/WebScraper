@@ -1,0 +1,6 @@
+### GET request for 25 cards
+GET http://localhost:8080/all/25/1
+
+### GET request for 25 cards
+GET http://localhost:8080/all/50/2
+###
