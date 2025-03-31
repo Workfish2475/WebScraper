@@ -26,4 +26,19 @@
         "info": "CHARACTER"
     },
 ```
-- Once that step is complete, the script will then download each of the corresponding images from the website and store them in the ```assets/cards/``` directory. 
+- Once that step is complete, the script will then download each of the corresponding images from the website and store them in the ```assets/``` directory. 
+
+### API Options
+There are two options for launching the demo API: one in Python and the other in Go.
+
+#### Python
+
+Run the command: ```python server.py```
+
+#### Go
+
+Run the command: ```go run server.go```
+
+#### Notes
+
+- Currently, the APIs are just parsing the ```data.json``` file and returning everything based on that, but I plan to eventually make use of a DBMS to help make things a bit more efficient.
