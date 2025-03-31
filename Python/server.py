@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, render_template, send_from_directory
 import os
-from jsonParse import DataFetcher
+from json_parse import DataFetcher
 import json
 
 app = Flask(__name__)
@@ -15,6 +15,7 @@ def initialize():
 @app.route('/')
 def home():
     return render_template('index.html')
+
 
 @app.route('/fetchAll')
 def fetchall():
