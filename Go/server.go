@@ -155,10 +155,14 @@ func getAllCardsPag(c *gin.Context) {
 }
 
 func main() {
-	//Unhandled err
-	loadData()
+	err := loadData()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	router := gin.Default()
+
+	router.Static("/assets", "../assets")
 
 	router.GET("/all", getAllCards)
 	router.GET("/all/:limit/:page", getAllCardsPag)
