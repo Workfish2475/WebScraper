@@ -3,3 +3,4 @@
 .idea/
 .venv/
 assets/.DS_Store
+.env

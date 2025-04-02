@@ -2,11 +2,30 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
+	"log"
+	"os"
+	"strings"
 	"time"
 )
 
-func connectToDB(dbHost string) *sql.DB {
-	db, err := sql.Open("mysql", "user:password@/dbname")
+func init() {
+	err := godotenv.Load("../.env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+}
+
+func connectToDB() *sql.DB {
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASSWORD")
+	host := os.Getenv("DB_HOST")
+	dbName := os.Getenv("DB_NAME")
+
+	connectionString := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s?parseTime=true&charset=utf8mb4", user, password, host, dbName)
+	db, err := sql.Open("mysql", connectionString)
 	if err != nil {
 		panic(err)
 	}
@@ -18,21 +37,44 @@ func connectToDB(dbHost string) *sql.DB {
 	return db
 }
 
-func queryByColor(color string, db *sql.DB) ([]card, error) {
+// TODO: Needs to be sped up as this is running slower than the JSON endpoint.
+func queryByColor(colors []string, db *sql.DB) ([]card, error) {
 	var cards []card
 
-	query := "Select * from cards where color like ?"
-	searchTerm := "%" + color + "%"
+	query := "Select distinct * from cards where "
 
-	rows, err := db.Query(query, searchTerm)
+	conditions := make([]string, len(colors))
+	args := make([]interface{}, len(colors))
+
+	for i, color := range colors {
+		conditions[i] = "color LIKE ?"
+		args[i] = "%" + color + "%"
+	}
+
+	query += strings.Join(conditions, " OR ")
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var cardItem card
-		if err := rows.Scan(&cardItem.Name, &cardItem.Cost, &cardItem.Power, &cardItem.Counter, &cardItem.Color, &cardItem.Type, &cardItem.Effect, &cardItem.Set, &cardItem.Attribute, &cardItem.CardNo, &cardItem.Info); err != nil {
+		if err := rows.Scan(
+			&cardItem.CardNo,
+			&cardItem.Name,
+			&cardItem.Cost,
+			&cardItem.Power,
+			&cardItem.Counter,
+			&cardItem.Color,
+			&cardItem.Type,
+			&cardItem.Effect,
+			&cardItem.CardSet,
+			&cardItem.Attribute,
+			&cardItem.ImgPath,
+			&cardItem.Info,
+		); err != nil {
 			return nil, err
 		}
 

@@ -20,7 +20,7 @@ type card struct {
 	Color     string `json:"color"`
 	Type      string `json:"type"`
 	Effect    string `json:"effect"`
-	Set       string `json:"set"`
+	CardSet   string `json:"set"`
 	Attribute string `json:"attribute"`
 	CardNo    int    `json:"cardNo"`
 	ImgPath   string `json:"imgPath"`
@@ -87,7 +87,7 @@ func getBySet(c *gin.Context) {
 	set := c.Param("set")
 
 	for _, card := range dataStore.data {
-		if strings.Contains(strings.ToLower(card.Set), strings.ToLower(set)) {
+		if strings.Contains(strings.ToLower(card.CardSet), strings.ToLower(set)) {
 			results = append(results, card)
 		}
 	}
@@ -122,7 +122,20 @@ func getByColor(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, results)
-	writeLog(c.ClientIP())
+}
+
+func getByColorSqL(c *gin.Context) {
+	dbCon := connectToDB()
+	defer dbCon.Close()
+
+	var colors []string = strings.Split(strings.ToLower(c.Param("color")), "-")
+
+	results, err := queryByColor(colors, dbCon)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	c.IndentedJSON(http.StatusOK, results)
 }
 
 // Consider adding pagnation and limit params for handling
@@ -170,6 +183,8 @@ func main() {
 	router.GET("/id/:id", getByID)
 	router.GET("/set/:set", getBySet)
 	router.GET("/color/:color", getByColor)
+
+	router.GET("/colorSQL/:color", getByColorSqL)
 
 	//Unhandled err
 	router.Run("localhost:8080")
