@@ -37,7 +37,6 @@ func connectToDB() *sql.DB {
 	return db
 }
 
-// TODO: Needs to be sped up as this is running slower than the JSON endpoint.
 func queryByColor(colors []string, db *sql.DB) ([]card, error) {
 	var cards []card
 
@@ -54,6 +53,87 @@ func queryByColor(colors []string, db *sql.DB) ([]card, error) {
 	query += strings.Join(conditions, " OR ")
 
 	rows, err := db.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cardItem card
+		if err := rows.Scan(
+			&cardItem.CardNo,
+			&cardItem.Name,
+			&cardItem.Cost,
+			&cardItem.Power,
+			&cardItem.Counter,
+			&cardItem.Color,
+			&cardItem.Type,
+			&cardItem.Effect,
+			&cardItem.CardSet,
+			&cardItem.Attribute,
+			&cardItem.ImgPath,
+			&cardItem.Info,
+		); err != nil {
+			return nil, err
+		}
+
+		cards = append(cards, cardItem)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return cards, nil
+}
+
+func queryBySet(set string, db *sql.DB) ([]card, error) {
+	var cards []card
+
+	query := "Select * from cards where CardSet LIKE ?"
+	arg := "%" + set + "%"
+
+	rows, err := db.Query(query, arg)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cardItem card
+		if err := rows.Scan(
+			&cardItem.CardNo,
+			&cardItem.Name,
+			&cardItem.Cost,
+			&cardItem.Power,
+			&cardItem.Counter,
+			&cardItem.Color,
+			&cardItem.Type,
+			&cardItem.Effect,
+			&cardItem.CardSet,
+			&cardItem.Attribute,
+			&cardItem.ImgPath,
+			&cardItem.Info,
+		); err != nil {
+			return nil, err
+		}
+
+		cards = append(cards, cardItem)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return cards, nil
+}
+
+func queryByID(id int, db *sql.DB) ([]card, error) {
+	var cards []card
+
+	query := "Select * from cards where CardNo = ?"
+
+	rows, err := db.Query(query, id)
 	if err != nil {
 		return nil, fmt.Errorf("query failed: %w", err)
 	}

@@ -1,9 +1,9 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -31,6 +31,11 @@ type store struct {
 	data []card
 }
 
+type databaseConnection struct {
+	db *sql.DB
+}
+
+var dbConn = databaseConnection{}
 var dataStore = &store{}
 
 func loadData() error {
@@ -61,7 +66,6 @@ func getByName(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, results)
-	writeLog(c.ClientIP())
 }
 
 func getByID(c *gin.Context) {
@@ -69,7 +73,7 @@ func getByID(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error with id param": err.Error()})
 	}
 
 	for _, card := range dataStore.data {
@@ -79,7 +83,6 @@ func getByID(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, results)
-	writeLog(c.ClientIP())
 }
 
 func getBySet(c *gin.Context) {
@@ -93,7 +96,19 @@ func getBySet(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, results)
-	writeLog(c.ClientIP())
+}
+
+func getBySetSQL(c *gin.Context) {
+	var results []card
+	set := c.Param("set")
+
+	results, err := queryBySet(set, dbConn.db)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error with query": err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, results)
 }
 
 func getByColor(c *gin.Context) {
@@ -125,39 +140,51 @@ func getByColor(c *gin.Context) {
 }
 
 func getByColorSqL(c *gin.Context) {
-	dbCon := connectToDB()
-	defer dbCon.Close()
-
 	var colors []string = strings.Split(strings.ToLower(c.Param("color")), "-")
 
-	results, err := queryByColor(colors, dbCon)
+	results, err := queryByColor(colors, dbConn.db)
 	if err != nil {
-		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error with query": err.Error()})
+		return
 	}
 
 	c.IndentedJSON(http.StatusOK, results)
 }
 
-// Consider adding pagnation and limit params for handling
-func getAllCards(c *gin.Context) {
-	c.JSON(http.StatusOK, dataStore.data)
-	writeLog(c.ClientIP())
+func getByIDSQL(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error with id param": err.Error()})
+		return
+	}
+
+	results, err := queryByID(id, dbConn.db)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error during query": err.Error()})
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, results)
 }
 
-// Consider a check for out of bounds and handling
+func getAllCards(c *gin.Context) {
+	c.JSON(http.StatusOK, dataStore.data)
+}
+
 func getAllCardsPag(c *gin.Context) {
-	limit, err := strconv.Atoi(c.Param("limit")) //amount of cards to fetch
+	limit, err := strconv.Atoi(c.Param("limit"))
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error: issue with limit param": err.Error()})
+		return
 	}
 
 	page, err := strconv.Atoi(c.Param("page"))
 	if err != nil {
-		log.Fatal(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error: issue with page param": err.Error()})
+		return
 	}
 
 	var results []card
-
 	lastIndex := limit * page
 
 	for i := lastIndex - limit; i < lastIndex && len(results) < limit; i++ {
@@ -170,13 +197,17 @@ func getAllCardsPag(c *gin.Context) {
 func main() {
 	err := loadData()
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
+
+	dbConn.db = connectToDB()
+	defer dbConn.db.Close()
 
 	router := gin.Default()
 
 	router.Static("/assets", "../assets")
 
+	//JSON Parsing endpoints
 	router.GET("/all", getAllCards)
 	router.GET("/all/:limit/:page", getAllCardsPag)
 	router.GET("/name/:name", getByName)
@@ -184,8 +215,13 @@ func main() {
 	router.GET("/set/:set", getBySet)
 	router.GET("/color/:color", getByColor)
 
+	//MySQL endpoints
 	router.GET("/colorSQL/:color", getByColorSqL)
+	router.GET("/setSQL/:set", getBySetSQL)
+	router.GET("/idSQL/:id", getByIDSQL)
 
-	//Unhandled err
-	router.Run("localhost:8080")
+	err = router.Run("localhost:8080")
+	if err != nil {
+		panic(err)
+	}
 }
