@@ -37,9 +37,35 @@ func connectToDB() *sql.DB {
 	return db
 }
 
-func queryByColor(colors []string, db *sql.DB) ([]card, error) {
+// TODO: Testing needed
+func parseResponse(rows *sql.Rows) ([]card, error) {
 	var cards []card
+	for rows.Next() {
+		var cardItem card
+		if err := rows.Scan(
+			&cardItem.CardNo,
+			&cardItem.Name,
+			&cardItem.Cost,
+			&cardItem.Power,
+			&cardItem.Counter,
+			&cardItem.Color,
+			&cardItem.Type,
+			&cardItem.Effect,
+			&cardItem.CardSet,
+			&cardItem.Attribute,
+			&cardItem.ImgPath,
+			&cardItem.Info,
+		); err != nil {
+			return nil, err
+		}
 
+		cards = append(cards, cardItem)
+	}
+
+	return cards, nil
+}
+
+func queryByColor(colors []string, db *sql.DB) ([]card, error) {
 	query := "Select distinct * from cards where "
 
 	conditions := make([]string, len(colors))
@@ -58,26 +84,9 @@ func queryByColor(colors []string, db *sql.DB) ([]card, error) {
 	}
 	defer rows.Close()
 
-	for rows.Next() {
-		var cardItem card
-		if err := rows.Scan(
-			&cardItem.CardNo,
-			&cardItem.Name,
-			&cardItem.Cost,
-			&cardItem.Power,
-			&cardItem.Counter,
-			&cardItem.Color,
-			&cardItem.Type,
-			&cardItem.Effect,
-			&cardItem.CardSet,
-			&cardItem.Attribute,
-			&cardItem.ImgPath,
-			&cardItem.Info,
-		); err != nil {
-			return nil, err
-		}
-
-		cards = append(cards, cardItem)
+	cards, err := parseResponse(rows)
+	if err != nil {
+		return nil, fmt.Errorf("parse response failed: %w", err)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -88,8 +97,6 @@ func queryByColor(colors []string, db *sql.DB) ([]card, error) {
 }
 
 func queryBySet(set string, db *sql.DB) ([]card, error) {
-	var cards []card
-
 	query := "Select * from cards where CardSet LIKE ?"
 	arg := "%" + set + "%"
 
@@ -99,26 +106,9 @@ func queryBySet(set string, db *sql.DB) ([]card, error) {
 	}
 	defer rows.Close()
 
-	for rows.Next() {
-		var cardItem card
-		if err := rows.Scan(
-			&cardItem.CardNo,
-			&cardItem.Name,
-			&cardItem.Cost,
-			&cardItem.Power,
-			&cardItem.Counter,
-			&cardItem.Color,
-			&cardItem.Type,
-			&cardItem.Effect,
-			&cardItem.CardSet,
-			&cardItem.Attribute,
-			&cardItem.ImgPath,
-			&cardItem.Info,
-		); err != nil {
-			return nil, err
-		}
-
-		cards = append(cards, cardItem)
+	cards, err := parseResponse(rows)
+	if err != nil {
+		return nil, fmt.Errorf("parse response failed: %w", err)
 	}
 
 	if err := rows.Err(); err != nil {
@@ -129,8 +119,6 @@ func queryBySet(set string, db *sql.DB) ([]card, error) {
 }
 
 func queryByID(id int, db *sql.DB) ([]card, error) {
-	var cards []card
-
 	query := "Select * from cards where CardNo = ?"
 
 	rows, err := db.Query(query, id)
@@ -139,30 +127,31 @@ func queryByID(id int, db *sql.DB) ([]card, error) {
 	}
 	defer rows.Close()
 
-	for rows.Next() {
-		var cardItem card
-		if err := rows.Scan(
-			&cardItem.CardNo,
-			&cardItem.Name,
-			&cardItem.Cost,
-			&cardItem.Power,
-			&cardItem.Counter,
-			&cardItem.Color,
-			&cardItem.Type,
-			&cardItem.Effect,
-			&cardItem.CardSet,
-			&cardItem.Attribute,
-			&cardItem.ImgPath,
-			&cardItem.Info,
-		); err != nil {
-			return nil, err
-		}
-
-		cards = append(cards, cardItem)
+	cards, err := parseResponse(rows)
+	if err != nil {
+		return nil, fmt.Errorf("parse response failed: %w", err)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err
+	}
+
+	return cards, nil
+}
+
+// FIXME: This is off by 1.
+func queryPag(limit int, page int, db *sql.DB) ([]card, error) {
+	query := "select * from cards limit ? offset ?"
+
+	rows, err := db.Query(query, limit, page)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	cards, err := parseResponse(rows)
+	if err != nil {
+		return nil, fmt.Errorf("parse response failed: %w", err)
 	}
 
 	return cards, nil

@@ -1,0 +1,11 @@
+### GET request to example server
+GET http://localhost:8080/colorSQL/red
+
+### GET by set
+GET http://localhost:8080/setSQL/champ
+
+### GET by id
+GET http://localhost:8080/idSQL/1
+
+### Get all pag and limit
+GET http://localhost:8080/allSQL/25/1

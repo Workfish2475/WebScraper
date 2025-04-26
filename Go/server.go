@@ -113,7 +113,7 @@ func getBySetSQL(c *gin.Context) {
 
 func getByColor(c *gin.Context) {
 	var results []card
-	var colors []string = strings.Split(strings.ToLower(c.Param("color")), "-")
+	var colors = strings.Split(strings.ToLower(c.Param("color")), "-")
 
 	colorSet := make(map[string]struct{}, len(colors))
 	for _, color := range colors {
@@ -140,7 +140,7 @@ func getByColor(c *gin.Context) {
 }
 
 func getByColorSqL(c *gin.Context) {
-	var colors []string = strings.Split(strings.ToLower(c.Param("color")), "-")
+	var colors = strings.Split(strings.ToLower(c.Param("color")), "-")
 
 	results, err := queryByColor(colors, dbConn.db)
 	if err != nil {
@@ -151,7 +151,7 @@ func getByColorSqL(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, results)
 }
 
-func getByIDSQL(c *gin.Context) {
+func getByIdSQL(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error with id param": err.Error()})
@@ -194,6 +194,27 @@ func getAllCardsPag(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, results)
 }
 
+// TODO: Testing needed
+func getAllCardsPageSQL(c *gin.Context) {
+	limit, err := strconv.Atoi(c.Param("limit"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error: issue with limit param": err.Error()})
+	}
+
+	page, err := strconv.Atoi(c.Param("page"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error: issue with page param": err.Error()})
+	}
+
+	results, err := queryPag(limit, page, dbConn.db)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error during query": err.Error()})
+	}
+
+	c.IndentedJSON(http.StatusOK, results)
+}
+
+// TODO: Add pooling here to handling lots of connections as once
 func main() {
 	err := loadData()
 	if err != nil {
@@ -218,7 +239,8 @@ func main() {
 	//MySQL endpoints
 	router.GET("/colorSQL/:color", getByColorSqL)
 	router.GET("/setSQL/:set", getBySetSQL)
-	router.GET("/idSQL/:id", getByIDSQL)
+	router.GET("/idSQL/:id", getByIdSQL)
+	router.GET("/allSQL/:limit/:page", getAllCardsPageSQL)
 
 	err = router.Run("localhost:8080")
 	if err != nil {
